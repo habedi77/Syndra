@@ -326,8 +326,9 @@ namespace Syndra {
 					if (mc.path.find("\\") == 0) {
 						filepath = dir.string() + mc.path;
 					}
-					if (!filepath.empty())
-						mc.model = Model(filepath);
+					/*if (!filepath.empty())*/
+						//TODO
+						//mc.model = Model(filepath);
 				}
 
 				auto lightComponent = entity["LightComponent"];

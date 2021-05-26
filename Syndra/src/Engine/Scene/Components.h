@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "entt.hpp"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
@@ -11,7 +12,16 @@
 #include "Engine/Renderer/Material.h"
 #include "Engine/Scene/Light.h"
 
+
 namespace Syndra {
+
+	class Entity;
+
+	struct relationship {
+		Ref<Entity> first;
+		Ref<Entity> next;
+		Ref<Entity> parent;
+	};
 
 	struct TagComponent
 	{
@@ -46,13 +56,13 @@ namespace Syndra {
 
 	struct MeshComponent {
 
-		Model model;
+		Mesh mesh;
 		std::string path;
 
 		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
-		MeshComponent(std::string& path)
-			:path(path), model(path){}
+		MeshComponent(std::string& path, const Mesh& mesh)
+			:path(path), mesh(mesh){}
 	};
 
 	struct CameraComponent

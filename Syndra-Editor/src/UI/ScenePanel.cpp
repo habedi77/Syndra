@@ -42,10 +42,33 @@ namespace Syndra {
 		//---------------------------------------------Scene hierarchy-------------------------------//
 		ImGui::Begin("Scene hierarchy");
 
-		for (auto ent:m_Context->m_Entities)
+		for (auto& ent:m_Context->m_Entities)
 		{
 			if (ent) {
-				DrawEntity(ent);
+				if (!ent->HasComponent<relationship>()) {
+					if (DrawEntity(ent)) {
+						ImGui::TreePop();
+					}
+				}
+				else
+				{
+					auto& comp = ent->GetComponent<relationship>();
+					if (comp.parent == ent) {
+						if (DrawEntity(ent)) {
+
+							auto curr = comp.first;
+							while (curr) {
+
+								if (DrawEntity(curr)) {
+									ImGui::TreePop();
+								}
+								curr = curr->GetComponent<relationship>().next;
+							}
+							ImGui::TreePop();
+						}
+					}
+				}
+
 			}
 		}
 
@@ -183,7 +206,7 @@ namespace Syndra {
 	}
 
 
-	void ScenePanel::DrawEntity(Ref<Entity>& entity)
+	bool ScenePanel::DrawEntity(Ref<Entity>& entity)
 	{
 		auto& tag = entity->GetComponent<TagComponent>();
 		ImGuiTreeNodeFlags flags = ((m_SelectionContext == *entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
@@ -205,7 +228,6 @@ namespace Syndra {
 				m_SelectionContext = *entity;
 				m_EntityCreated = true;
 			}
-
 			ImGui::EndPopup();
 		}
 		if (m_SelectionContext == *entity && Input::IsKeyPressed(Key::Delete)) {
@@ -231,17 +253,28 @@ namespace Syndra {
 		//	}
 		//}
 
-		if (opened) {
-			ImGui::TreePop();
-		}
 
 		if (entityDeleted)
 		{
 			if (m_SelectionContext == *entity)
 				m_SelectionContext = {};
+			if (entity->HasComponent<relationship>()) {
+				auto& comp = entity->GetComponent<relationship>();
+				if (comp.parent == entity) {
+					auto curr = comp.first;
+					while (curr) {
+						auto next = curr->GetComponent<relationship>().next;
+						m_Context->DestroyEntity(*curr);
+						curr = next;
+					}
+				}
+				else {
+					//TODO ADD previous node to implement this
+				}
+			}
 			m_Context->DestroyEntity(*entity);
 		}
-
+		return opened;
 	}
 
 	void ScenePanel::DrawComponents(Entity entity)
@@ -308,7 +341,7 @@ namespace Syndra {
 						filePath = *path;
 					}
 					tag = filePath;
-					entity.GetComponent<MeshComponent>().model = Model(*path);
+					//entity.GetComponent<MeshComponent>().model = Model(*path);
 				}
 			}
 			ImGui::PopStyleVar();

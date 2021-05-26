@@ -14,6 +14,7 @@ namespace Syndra {
 		std::vector<Ref<Texture2D>> syndraTextures;
 		std::vector<Mesh>  meshes;
 		std::string directory;
+		std::string m_Name;
 		bool gammaCorrection;
 		Model() = default;
 		~Model() = default;

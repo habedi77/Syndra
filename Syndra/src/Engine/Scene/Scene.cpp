@@ -155,4 +155,9 @@ namespace Syndra {
 	{
 	}
 
+	template<>
+	void Scene::OnComponentAdded<relationship>(Entity entity, relationship& component)
+	{
+	}
+
 }

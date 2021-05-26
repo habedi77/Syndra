@@ -3,7 +3,8 @@
 
 namespace Syndra {
 
-	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures)
+	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<texture> textures, const std::string& name)
+		:m_Name(name)
 	{
 		this->vertices = vertices;
 		this->indices = indices;

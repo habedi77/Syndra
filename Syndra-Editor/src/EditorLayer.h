@@ -24,6 +24,7 @@ namespace Syndra {
 		void NewScene();
 		void OpenScene();
 		void SaveSceneAs();
+		void ImportAsset();
 
 	private:
 

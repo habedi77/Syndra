@@ -244,11 +244,13 @@ namespace Syndra {
 		{
 			auto& tc = view.get<TransformComponent>(ent);
 			auto& mc = view.get<MeshComponent>(ent);
-			if (!mc.path.empty()) 
-			{
-				s_Data.depth->SetMat4("transform.u_trans", tc.GetTransform());
-				SceneRenderer::RenderEntityColor(ent, tc, mc, s_Data.depth);
+			auto transform = tc.GetTransform();
+			if (auto* rel = scene.m_Registry.try_get<relationship>(ent); rel && (entt::entity)*rel->parent != ent) {
+				transform += rel->parent->GetComponent<TransformComponent>().GetTransform();
 			}
+			s_Data.depth->SetMat4("transform.u_trans", tc.GetTransform());
+			SceneRenderer::RenderEntityColor(ent, tc, mc, s_Data.depth);
+			
 		}
 		s_Data.shadowPass->UnbindTargetFrameBuffer();
 
@@ -262,17 +264,23 @@ namespace Syndra {
 		{
 			auto& tc = view.get<TransformComponent>(ent);
 			auto& mc = view.get<MeshComponent>(ent);
-			if (!mc.path.empty()) 
+			auto transform = tc;
+			if (scene.m_Registry.has<MaterialComponent>(ent)) {
+				auto& mat = scene.m_Registry.get<MaterialComponent>(ent);
+				SceneRenderer::RenderEntityColor(ent, tc, mc, mat);
+			}
+			else
 			{
-				if (scene.m_Registry.has<MaterialComponent>(ent)) {
-					auto& mat = scene.m_Registry.get<MaterialComponent>(ent);
-					SceneRenderer::RenderEntityColor(ent, tc, mc, mat);
+				if (auto* rel = scene.m_Registry.try_get<relationship>(ent); rel && (entt::entity)*rel->parent != ent) {
+					auto& parentTC = rel->parent->GetComponent<TransformComponent>();
+					transform.Translation = parentTC.Translation+ tc.Translation;
+					transform.Rotation = parentTC.Rotation + tc.Rotation;
+					transform.Scale = parentTC.Scale + tc.Scale;
+					//tc.Rotation += parentTC.Rotation;
+					//tc.Scale += parentTC.Scale;
 				}
-				else
-				{
-					s_Data.geoShader->SetMat4("transform.u_trans", tc.GetTransform());
-					SceneRenderer::RenderEntityColor(ent, tc, mc, s_Data.geoShader);
-				}
+				s_Data.geoShader->SetMat4("transform.u_trans", transform.GetTransform());
+				SceneRenderer::RenderEntityColor(ent, tc, mc, s_Data.geoShader);
 			}
 		}
 		s_Data.geoShader->Unbind();
@@ -281,14 +289,14 @@ namespace Syndra {
 
 	void SceneRenderer::RenderEntityColor(const entt::entity& entity, TransformComponent& tc, MeshComponent& mc,const Ref<Shader>& shader)
 	{
-		RenderCommand::SetState(RenderState::CULL, false);
-		Renderer::Submit(shader, mc.model);
-		RenderCommand::SetState(RenderState::CULL, true);
+		//RenderCommand::SetState(RenderState::CULL, false);
+		Renderer::Submit(shader, mc.mesh);
+		//RenderCommand::SetState(RenderState::CULL, true);
 	}
 
 	void SceneRenderer::RenderEntityColor(const entt::entity& entity, TransformComponent& tc, MeshComponent& mc, MaterialComponent& mat)
 	{
-		Renderer::Submit(mat.material, mc.model);
+		Renderer::Submit(mat.material, mc.mesh);
 	}
 
 	void SceneRenderer::EndScene()
@@ -342,16 +350,39 @@ namespace Syndra {
 		ImGui::Begin("Renderer settings");
 
 		ImGui::Text("Geometry pass debugger");
+		static bool showAlbedo = false;
+		static bool showNormal = false;
+		static bool showPosition = false;
 		if (ImGui::Button("Albedo")) {
-			s_Data.textureRenderSlot = 2;
+			showAlbedo = !showAlbedo;
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Normal")) {
-			s_Data.textureRenderSlot = 1;
+			showNormal = !showNormal;
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Position")) {
-			s_Data.textureRenderSlot = 0;
+			showPosition = !showPosition;
+		}
+		auto width = s_Data.geoPass->GetSpecification().TargetFrameBuffer->GetSpecification().Width * 0.5f;
+		auto height = s_Data.geoPass->GetSpecification().TargetFrameBuffer->GetSpecification().Height * 0.5f;
+		ImVec2 frameSize = ImVec2{ width,height };
+		if (showAlbedo) {
+			ImGui::Begin("Albedo");
+			ImGui::Image(reinterpret_cast<void*>(s_Data.geoPass->GetFrameBufferTextureID(2)), frameSize, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+			ImGui::End();
+		}
+
+		if (showNormal) {
+			ImGui::Begin("Normal");
+			ImGui::Image(reinterpret_cast<void*>(s_Data.geoPass->GetFrameBufferTextureID(1)),frameSize, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+			ImGui::End();
+		}
+
+		if (showPosition) {
+			ImGui::Begin("Position");
+			ImGui::Image(reinterpret_cast<void*>(s_Data.geoPass->GetFrameBufferTextureID(0)), frameSize, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+			ImGui::End();
 		}
 
 		ImGui::NewLine();

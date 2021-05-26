@@ -156,6 +156,11 @@ namespace Syndra {
 				if (ImGui::MenuItem("Add Entity")) {
 					m_ActiveScene->CreateEntity();
 				}
+				if (ImGui::MenuItem("Import"))
+				{
+					ImportAsset();
+				}
+
 				ImGui::EndMenu();
 			}
 			ImGui::EndMenuBar();
@@ -432,6 +437,46 @@ namespace Syndra {
 		{
 			SceneSerializer serializer(m_ActiveScene);
 			serializer.Serialize(*filepath);
+		}
+	}
+
+	void EditorLayer::ImportAsset()
+	{
+		std::optional<std::string> filepath = FileDialogs::OpenFile("3D model (*.fbx)\0*.fbx\0");
+		if (filepath)
+		{
+			auto model = CreateRef<Model>(*filepath);
+			m_ActiveScene->m_Models.push_back(model);
+
+			auto& parentEnt = m_ActiveScene->CreateEntity(model->m_Name);
+
+			int index = 0;
+			Ref<Entity> firstChild;
+			Ref<Entity> currChild;
+			Ref<Entity> nextChild;
+
+			firstChild = m_ActiveScene->CreateEntity(model->meshes[0].m_Name);
+			for (auto& mesh : model->meshes)
+			{
+				if (index == 0) {
+					currChild = firstChild;
+				}
+				if (index == model->meshes.size() - 1) {
+					nextChild = nullptr;
+				}
+				if (index != model->meshes.size() - 1) {
+					nextChild = m_ActiveScene->CreateEntity(mesh.m_Name);
+				}
+				auto& mc = currChild->AddComponent<MeshComponent>(std::string(),mesh);
+				currChild->AddComponent<relationship>(firstChild, nextChild, parentEnt);
+				
+				if (index != model->meshes.size() - 1) {
+					currChild = nextChild;
+				}
+				index++;
+			}
+
+			parentEnt->AddComponent<relationship>(firstChild, nullptr, parentEnt);
 		}
 	}
 

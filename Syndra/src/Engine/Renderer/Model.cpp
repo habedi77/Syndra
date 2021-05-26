@@ -15,6 +15,9 @@ namespace Syndra {
 		const aiScene* scene = importer.ReadFile(path,aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 		// check for errors
 		m_Scene = scene;
+		m_Name = path.substr(path.find_last_of("\\")+1);
+		m_Name = m_Name.substr(0, m_Name.find_last_of("."));
+
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
 		{
 			SN_CORE_ERROR("ERROR::ASSIMP:: {0}", importer.GetErrorString());
@@ -50,7 +53,6 @@ namespace Syndra {
 		std::vector<Vertex> vertices;
 		std::vector<unsigned int> indices;
 		std::vector<texture> textures;
-
 
 		// walk through each of the mesh's vertices
 		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -122,7 +124,7 @@ namespace Syndra {
 		textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
 		// return a mesh object created from the extracted mesh data
-		return Mesh(vertices, indices, textures);
+		return Mesh(vertices, indices, textures, mesh->mName.C_Str());
 	}
 
 	std::vector<texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)

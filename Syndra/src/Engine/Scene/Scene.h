@@ -42,6 +42,7 @@ namespace Syndra {
 		entt::registry m_Registry;
 
 		std::vector<Ref<Entity>> m_Entities;
+		std::vector<Ref<Model>> m_Models;
 		
 		std::string m_Name;
 
